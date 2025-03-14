@@ -1,3 +1,4 @@
 dataset_s/
 .venv/
 preprocessed_data_grouped/
+split_fif/
