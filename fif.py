@@ -117,6 +117,4 @@ def process_folder(source_folder, destination_folder,function_name):
                     function_name(inp_path)
 
 
-process_folder("dataset_s/mdd","split_fif/mdd",slice_and_save_eeg)
-
 process_folder("dataset_s/healthy","split_fif/healthy",slice_and_save_eeg)
