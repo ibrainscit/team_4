@@ -4,3 +4,5 @@ preprocessed_data_grouped/
 split_fif/
 out.log
 *.log
+other_files/
+*.txt
