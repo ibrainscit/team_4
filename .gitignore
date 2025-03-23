@@ -6,3 +6,4 @@ out.log
 *.log
 other_files/
 *.txt
+.ipynb_checkpoints/
