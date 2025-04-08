@@ -8,3 +8,4 @@ other_files/
 *.txt
 .ipynb_checkpoints/
 split_fif_new/
+preprocessed_data_new
