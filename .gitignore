@@ -7,3 +7,4 @@ out.log
 other_files/
 *.txt
 .ipynb_checkpoints/
+split_fif_new/
