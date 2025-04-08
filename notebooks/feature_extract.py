@@ -168,51 +168,55 @@ def process_and_combine(eo_file_path, ec_file_path, output_file):
 
 import os
 
+import os
+import re
+from collections import defaultdict
+
+def get_output_filename(file_name):
+    """
+    Extracts base from filename and returns formatted output filename.
+    Example: 'sub-88025281_ses-1_task-restEC_eeg_1_eeg.fif' →
+             'sub-88025281_ses-1_task-resteeg_combined_1.csv'
+    """
+    match = re.match(r"(sub-[^_]+_ses-\d+_task-rest)[A-Z]{2}_eeg_(\d)_eeg\.fif", file_name)
+    if match:
+        base, session = match.groups()
+        return f"{base}eeg_combined_{session}.csv"
+    return None
+
 def process_folder(source_folder, destination_folder):
     """
     Processes EO and EC files for all subjects and sessions, saving the features to CSV files.
-
-    Args:
-        source_folder (str): Path to the root folder containing subject EEG files.
-        destination_folder (str): Path to the folder where CSV files will be saved.
     """
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
 
-    eo_path, ec_path = None, None
-    ec_file = None  # Initialize ec_file to avoid the UnboundLocalError
-    ec = False
-    # Iterate through files in the source folder
-    for file in os.listdir(source_folder):
-        file_path = os.path.join(source_folder, file)
+    # Group files by session key (e.g., sub-88025281_ses-1_task-rest, session 1 or 2)
+    file_groups = defaultdict(dict)
 
-        if file.endswith("EC_eeg_1_eeg.fif"):
-            ec_path = file_path
-            ec_file = file  # Store EC file name for output filename generation
-            output_filename = ec_file.replace("EC_eeg_1_eeg.fif", "eeg_combined_1.csv")
-            ec=True
-        if file.endswith("EC_eeg_2_eeg.fif"):
-            ec_path = file_path
-            ec_file = file
-            ec=True
-            output_filename = ec_file.replace("EC_eeg_2_eeg.fif", "eeg_combined_2.csv")
-        if file.endswith("EO_eeg_1_eeg.fif") and not(ec):
-            eo_path = file_path
-            eo_file = file
-            output_filename = ec_file.replace("EO_eeg_1_eeg.fif", "eeg_combined_1.csv")
-        if file.endswith("EO_eeg_2_eeg.fif") and not(ec):
-            eo_path = file_path
-            eo_file = file
-            output_filename = ec_file.replace("EO_eeg_2_eeg.fif", "eeg_combined_2.csv")
-        # Process only when both EO and EC files are found
-        if eo_path and ec_path and ec_file and ec_file:
+    for file in os.listdir(source_folder):
+        if not file.endswith(".fif"):
+            continue
+
+        file_path = os.path.join(source_folder, file)
+        match = re.match(r"(sub-[^_]+_ses-\d+_task-rest)(EO|EC)_eeg_(\d)_eeg\.fif", file)
+        if match:
+            base_key, condition, session = match.groups()
+            session_key = f"{base_key}_session-{session}"
+            file_groups[session_key][condition] = file_path
+            file_groups[session_key]['raw_file'] = file  # Save raw name for output filename
+
+    for session_key, files in file_groups.items():
+        eo_path = files.get('EO')
+        ec_path = files.get('EC')
+        raw_file = files.get('raw_file')
+
+        if eo_path and ec_path and raw_file:
+            output_filename = get_output_filename(raw_file)
             output_filepath = os.path.join(destination_folder, output_filename)
 
-            print(f"Processing: \n  EO: {eo_path} \n  EC: {ec_path} \n  Output: {output_filepath}")
+            print(f"Processing:\n  EO: {eo_path}\n  EC: {ec_path}\n  Output: {output_filepath}")
             process_and_combine(eo_path, ec_path, output_filepath)
-
-            # Reset paths after processing
-            eo_path, ec_path, ec_file = None, None, None
 
 
 
