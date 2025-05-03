@@ -22,6 +22,6 @@ for folder, txt_file in folder_files.items():
         for file_name in file_names:
             file_name = file_name.strip()  # Remove any extra whitespace or newline
             if os.path.exists(file_name):
-                shutil.move(file_name, folder)
+                shutil.copy(file_name, folder)
             else:
                 print(f"File '{file_name}' not found, skipping.")

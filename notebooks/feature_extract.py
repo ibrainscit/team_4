@@ -19,6 +19,8 @@ from scipy.stats import skew, kurtosis
 import os
 import bisect
 
+mne.set_cache_dir('/tmp/shm')
+
 # Load the participant metadata
 participants_df = pd.read_csv("TDBRAIN_participants_V2_cleaned.tsv", sep="\t")
 bin_edges = [0, 6, 13, 18, 26, 41, 61]      # left edges
@@ -167,8 +169,6 @@ def process_and_combine(eo_file_path, ec_file_path, output_file):
 
 
 import os
-
-import os
 import re
 from collections import defaultdict
 
@@ -180,18 +180,15 @@ def get_output_filename(file_name):
     """
     match = re.match(r"(sub-[^_]+_ses-\d+_task-rest)[A-Z]{2}_eeg_(\d)_eeg\.fif", file_name)
     if match:
-        base, session = match.groups()
-        return f"{base}eeg_combined_{session}.csv"
+        base, slice_num = match.groups()
+        return f"{base}eeg_combined-{slice_num}.csv"
     return None
 
+
 def process_folder(source_folder, destination_folder):
-    """
-    Processes EO and EC files for all subjects and sessions, saving the features to CSV files.
-    """
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
 
-    # Group files by session key (e.g., sub-88025281_ses-1_task-rest, session 1 or 2)
     file_groups = defaultdict(dict)
 
     for file in os.listdir(source_folder):
@@ -199,28 +196,31 @@ def process_folder(source_folder, destination_folder):
             continue
 
         file_path = os.path.join(source_folder, file)
-        match = re.match(r"(sub-[^_]+_ses-\d+_task-rest)(EO|EC)_eeg_(\d)_eeg\.fif", file)
+        match = re.match(r"(sub-[^_]+)_ses-(\d+)_task-rest(EO|EC)_eeg_(\d)_eeg\.fif", file)
         if match:
-            base_key, condition, session = match.groups()
-            session_key = f"{base_key}_session-{session}"
-            file_groups[session_key][condition] = file_path
-            file_groups[session_key]['raw_file'] = file  # Save raw name for output filename
+            subject, session, condition, slice_num = match.groups()
+            key = f"{subject}_ses-{session}_slice-{slice_num}"
+            file_groups[key][condition] = file_path
+            file_groups[key]['raw_file'] = file  # For naming output
 
-    for session_key, files in file_groups.items():
+    for key, files in sorted(file_groups.items()):  # sorted for consistent order
         eo_path = files.get('EO')
         ec_path = files.get('EC')
         raw_file = files.get('raw_file')
 
         if eo_path and ec_path and raw_file:
-            output_filename = get_output_filename(raw_file)
+            output_filename = get_output_filename(raw_file)  # already uses slice
             output_filepath = os.path.join(destination_folder, output_filename)
-
             print(f"Processing:\n  EO: {eo_path}\n  EC: {ec_path}\n  Output: {output_filepath}")
             process_and_combine(eo_path, ec_path, output_filepath)
 
 
 
+
 # Example usage
-process_folder("/mnt/data/saikrishna/Team_4/split_fif_new/mdd","../preprocessed_data_new/mdd")
+# process_folder("/mnt/data/saikrishna/Team_4/split_fif_new/mdd","../preprocessed_data_new/mdd")
+# print("After")
+# process_folder("/mnt/data/saikrishna/Team_4/split_fif_new/healthy","../preprocessed_data_new/healthy")
+process_folder("/mnt/data/saikrishna/Team_4/split_fif_new/mdd2","../preprocessed_data_new/mdd2")
 print("After")
-process_folder("/mnt/data/saikrishna/Team_4/split_fif_new/healthy","../preprocessed_data_new/healthy")
+process_folder("/mnt/data/saikrishna/Team_4/split_fif_new/mdd3","../preprocessed_data_new/mdd3")
